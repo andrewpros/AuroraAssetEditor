@@ -17,11 +17,12 @@ namespace AuroraAssetEditor.Controls {
     using System.Windows.Controls;
     using System.Windows.Threading;
     using AuroraAssetEditor.Classes;
+    using Microsoft.Win32;
 
     /// <summary>
     ///     Interaction logic for FtpAssetsControl.xaml
     /// </summary>
-    public partial class FtpAssetsControl {
+    public partial class LocalAssetsControl {
         private readonly ThreadSafeObservableCollection<AuroraDbManager.ContentItem> _assetsList = new ThreadSafeObservableCollection<AuroraDbManager.ContentItem>();
         private readonly BackgroundControl _background;
         private readonly BoxartControl _boxart;
@@ -30,70 +31,42 @@ namespace AuroraAssetEditor.Controls {
         private readonly ScreenshotsControl _screenshots;
         private byte[] _buffer;
         private bool _isBusy, _isError;
+        private string ContentDbPath;
 
-        public FtpAssetsControl(MainWindow main, BoxartControl boxart, BackgroundControl background, IconBannerControl iconBanner, ScreenshotsControl screenshots) {
+        public LocalAssetsControl(MainWindow main, BoxartControl boxart, BackgroundControl background, IconBannerControl iconBanner, ScreenshotsControl screenshots) {
             InitializeComponent();
             _main = main;
             _boxart = boxart;
             _background = background;
             _iconBanner = iconBanner;
             _screenshots = screenshots;
-            App.FtpOperations.StatusChanged += (sender, args) => Dispatcher.Invoke(new Action(() => Status.Text = args.StatusMessage));
+
             FtpAssetsBox.ItemsSource = _assetsList;
-            if(!App.FtpOperations.HaveSettings) {
-                var ip = GetActiveIp();
-                var index = ip.LastIndexOf('.');
-                if(ip.Length > 0 && index > 0)
-                    IpBox.Text = ip.Substring(0, index + 1);
-                }
-            else {
-                IpBox.Text = App.FtpOperations.IpAddress;
-                UserBox.Text = App.FtpOperations.Username;
-                PassBox.Text = App.FtpOperations.Password;
-                PortBox.Text = App.FtpOperations.Port;
-                }
+
             }
 
-        private static string GetActiveIp() {
-            foreach(var unicastAddress in
-                NetworkInterface.GetAllNetworkInterfaces().Where(f => f.OperationalStatus == OperationalStatus.Up).Select(f => f.GetIPProperties()).Where(
-                                                                                                                                                          ipInterface =>
-                                                                                                                                                          ipInterface.GatewayAddresses.Count > 0)
-                                .SelectMany(
-                                            ipInterface =>
-                                            ipInterface.UnicastAddresses.Where(
-                                                                               unicastAddress =>
-                                                                               (unicastAddress.Address.AddressFamily == AddressFamily.InterNetwork) && (unicastAddress.IPv4Mask.ToString() != "0.0.0.0")))
-                )
-                return unicastAddress.Address.ToString();
-            return "";
-            }
-
-        private void TestConnectionClick(object sender, RoutedEventArgs e) {
-            var ip = IpBox.Text;
-            var user = UserBox.Text;
-            var pass = PassBox.Text;
-            var port = PortBox.Text;
-            var bw = new BackgroundWorker();
-            bw.DoWork += (o, args) => App.FtpOperations.TestConnection(ip, user, pass, port);
-            bw.RunWorkerCompleted += (o, args) => _main.BusyIndicator.Visibility = Visibility.Collapsed;
-            _main.BusyIndicator.Visibility = Visibility.Visible;
-            Status.Text = string.Format("Running a connection test to {0}", IpBox.Text);
-            bw.RunWorkerAsync();
-            }
-
-        private void SaveSettingsClick(object sender, RoutedEventArgs e) { App.FtpOperations.SaveSettings(IpBox.Text, UserBox.Text, PassBox.Text, PortBox.Text); }
 
         private void GetAssetsClick(object sender, RoutedEventArgs e) {
             _assetsList.Clear();
-            if(!App.FtpOperations.HaveSettings)
+
+            if(ContentDbPath == null) {
                 return;
+                }
+
             var bw = new BackgroundWorker();
             bw.DoWork += (o, args) => {
                 try {
                     var path = Path.Combine(Path.GetTempPath(), "AuroraAssetEditor.db");
-                    if(!App.FtpOperations.DownloadContentDb(path))
+
+                    if(File.Exists(ContentDbPath)) {
+                        File.Copy(ContentDbPath, path);
+
+                        }
+                    else {
                         return;
+                        }
+
+
                     foreach(var title in AuroraDbManager.GetDbTitles(path))
                         _assetsList.Add(title);
                     args.Result = true;
@@ -106,12 +79,12 @@ namespace AuroraAssetEditor.Controls {
             bw.RunWorkerCompleted += (o, args) => {
                 _main.BusyIndicator.Visibility = Visibility.Collapsed;
                 if((bool)args.Result)
-                    Status.Text = "Finished grabbing FTP Assets information successfully...";
+                    Status.Text = "Finished grabbing Assets information successfully...";
                 else
                     Status.Text = "There was an error, check error.log for more information...";
             };
             _main.BusyIndicator.Visibility = Visibility.Visible;
-            Status.Text = "Grabbing FTP Assets information...";
+            Status.Text = "Grabbing Assets information...";
             bw.RunWorkerAsync();
             }
 
@@ -351,6 +324,42 @@ namespace AuroraAssetEditor.Controls {
         private void RemoveScreenshotsClick(object sender, RoutedEventArgs e) {
             _screenshots.Reset();
             SaveScreenshotsClick(sender, e);
+            }
+
+        private void Button_Click(object sender, RoutedEventArgs e) {
+
+            }
+
+        private void SetLocalDB_Click(object sender, RoutedEventArgs e) {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+
+            openFileDialog.ReadOnlyChecked = true;
+
+            openFileDialog.Filter = "Aurora Content.db file (Content.db)|Content.db";
+
+            var lastDir = Properties.Settings.Default.LastDir;
+
+            if(!string.IsNullOrEmpty(lastDir) && Directory.Exists(lastDir)) {
+                openFileDialog.InitialDirectory = lastDir;
+                }
+            else {
+                openFileDialog.InitialDirectory ="::{20D04FE0-3AEA-1069-A2D8-08002B30309D}";
+                }
+
+
+
+            if(openFileDialog.ShowDialog().Value) {
+
+                var contentdbFile = new FileInfo(openFileDialog.FileName);
+
+                ContentDbPath = contentdbFile.FullName;
+
+                Properties.Settings.Default.LastDir = contentdbFile.DirectoryName;
+                Properties.Settings.Default.Save();
+
+                }
+
+
             }
 
         private enum Task {

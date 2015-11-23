@@ -11,5 +11,8 @@
     <Setting Name="Height" Type="System.Double" Scope="User">
       <Value Profile="(Default)">550</Value>
     </Setting>
+    <Setting Name="LastDir" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
   </Settings>
 </SettingsFile>

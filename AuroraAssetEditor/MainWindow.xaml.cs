@@ -146,6 +146,7 @@ namespace AuroraAssetEditor {
 
             OnlineAssetsTab.Content = new OnlineAssetsControl(this, _boxart, _background, _iconBanner, _screenshots);
             FtpAssetsTab.Content = new FtpAssetsControl(this, _boxart, _background, _iconBanner, _screenshots);
+            LocalAssetsTab.Content = new LocalAssetsControl(this, _boxart, _background, _iconBanner, _screenshots);
 
             var bw = new BackgroundWorker();
             bw.DoWork += (sender, e) => {
@@ -591,13 +592,13 @@ namespace AuroraAssetEditor {
 
         private void Window_Closing(object sender, CancelEventArgs e) {
             if(WindowState == WindowState.Maximized) {
-            
+
                 Properties.Settings.Default.Height = RestoreBounds.Height;
                 Properties.Settings.Default.Width = RestoreBounds.Width;
                 Properties.Settings.Default.Maximized = true;
                 }
             else {
-              
+
                 Properties.Settings.Default.Height = this.Height;
                 Properties.Settings.Default.Width = this.Width;
                 Properties.Settings.Default.Maximized = false;

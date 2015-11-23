@@ -20,6 +20,8 @@ namespace AuroraAssetEditor {
     /// </summary>
     public partial class App {
         internal static readonly FtpOperations FtpOperations = new FtpOperations();
+        internal static readonly LocalOperations LocalOperations = new LocalOperations();
+
 
         private static readonly Icon Icon =
             Icon.ExtractAssociatedIcon(Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(App)).Location), Path.GetFileName(Assembly.GetAssembly(typeof(App)).Location)));
