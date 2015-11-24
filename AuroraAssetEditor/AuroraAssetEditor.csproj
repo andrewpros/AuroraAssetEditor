@@ -96,7 +96,7 @@
     <Compile Include="Classes\AuroraAssetDll.cs" />
     <Compile Include="Classes\AuroraDbManager.cs" />
     <Compile Include="Classes\FTPOperations.cs" />
-    <Compile Include="Classes\LocalOperations.cs" />
+    <Compile Include="Classes\LocalManager.cs" />
     <Compile Include="Classes\ThreadSafeObservableCollection.cs" />
     <Compile Include="Classes\WpfControlThreadingExtensions.cs" />
     <Compile Include="Controls\CircularProgressBar.xaml.cs">

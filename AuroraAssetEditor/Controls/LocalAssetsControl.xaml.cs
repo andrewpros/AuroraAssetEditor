@@ -46,7 +46,7 @@ namespace AuroraAssetEditor.Controls {
             }
 
 
-        private void GetAssetsClick(object sender, RoutedEventArgs e) {
+        private void GetAssetsClick() {
             _assetsList.Clear();
 
             if(ContentDbPath == null) {
@@ -94,33 +94,37 @@ namespace AuroraAssetEditor.Controls {
             Dispatcher.InvokeIfRequired(() => asset = FtpAssetsBox.SelectedItem as AuroraDbManager.ContentItem, DispatcherPriority.Normal);
             if(asset == null)
                 return;
+
+
+            ContentItemLocal assetWrapper = new ContentItemLocal(asset);
+
             var bw = new BackgroundWorker();
             bw.DoWork += (sender, args) => {
                 try {
                     switch(task) {
                         case Task.GetBoxart:
-                        _buffer = asset.GetBoxart();
+                        _buffer = assetWrapper.GetBoxart();
                         break;
                         case Task.GetBackground:
-                        _buffer = asset.GetBackground();
+                        _buffer = assetWrapper.GetBackground();
                         break;
                         case Task.GetIconBanner:
-                        _buffer = asset.GetIconBanner();
+                        _buffer = assetWrapper.GetIconBanner();
                         break;
                         case Task.GetScreenshots:
-                        _buffer = asset.GetScreenshots();
+                        _buffer = assetWrapper.GetScreenshots();
                         break;
                         case Task.SetBoxart:
-                        asset.SaveAsBoxart(_buffer);
+                        assetWrapper.SaveAsBoxart(_buffer);
                         break;
                         case Task.SetBackground:
-                        asset.SaveAsBackground(_buffer);
+                        assetWrapper.SaveAsBackground(_buffer);
                         break;
                         case Task.SetIconBanner:
-                        asset.SaveAsIconBanner(_buffer);
+                        assetWrapper.SaveAsIconBanner(_buffer);
                         break;
                         case Task.SetScreenshots:
-                        asset.SaveAsScreenshots(_buffer);
+                        assetWrapper.SaveAsScreenshots(_buffer);
                         break;
                         }
                     args.Result = true;
@@ -356,6 +360,8 @@ namespace AuroraAssetEditor.Controls {
 
                 Properties.Settings.Default.LastDir = contentdbFile.DirectoryName;
                 Properties.Settings.Default.Save();
+
+                GetAssetsClick();
 
                 }
 
