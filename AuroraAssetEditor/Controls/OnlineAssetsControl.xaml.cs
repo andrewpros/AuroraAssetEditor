@@ -19,6 +19,7 @@ namespace AuroraAssetEditor.Controls {
     using System.Windows.Media.Imaging;
     using AuroraAssetEditor.Classes;
     using Image = System.Drawing.Image;
+    using Properties;
 
     /// <summary>
     ///     Interaction logic for OnlineAssetsControl.xaml
@@ -52,24 +53,30 @@ namespace AuroraAssetEditor.Controls {
             _background = background;
             _iconBanner = iconBanner;
             _screenshots = screenshots;
-            SourceBox.SelectedIndex = 0;
+            SourceBox.SelectedIndex = Settings.Default.OnlineSourceIndex;
+
 
             #region Xbox.com Locale worker
 
             var bw = new BackgroundWorker();
             bw.DoWork += LocaleWorkerDoWork;
             bw.RunWorkerCompleted += (sender, args) => {
-                                         LocaleBox.ItemsSource = _locales;
-                                         SourceBox.Items.Add("Xbox.com");
-                                         var index = 0;
-                                         for(var i = 0; i < _locales.Length; i++) {
-                                             if(!_locales[i].Locale.Equals("en-us", StringComparison.CurrentCultureIgnoreCase))
-                                                 continue;
-                                             index = i;
-                                             break;
-                                         }
-                                         LocaleBox.SelectedIndex = index;
-                                     };
+                LocaleBox.ItemsSource = _locales;
+                SourceBox.Items.Add("Xbox.com");
+                var index = 0;
+                for(var i = 0;i < _locales.Length;i++) {
+                    if(!_locales[i].Locale.Equals("en-us", StringComparison.CurrentCultureIgnoreCase))
+                        continue;
+                    index = i;
+                    break;
+                    }
+
+                if(Settings.Default.LocaleMarketIndex == -99) {
+                    Settings.Default.LocaleMarketIndex = index;
+                    }
+
+                LocaleBox.SelectedIndex = Settings.Default.LocaleMarketIndex;
+            };
             bw.RunWorkerAsync();
 
             #endregion
@@ -77,59 +84,59 @@ namespace AuroraAssetEditor.Controls {
             #region Unity Worker
 
             _unityWorker.DoWork += (o, args) => {
-                                       try {
-                                           _unityResult = XboxUnity.GetUnityCoverInfo(args.Argument.ToString());
-                                           Dispatcher.Invoke(new Action(() => StatusMessage.Text = "Finished downloading asset information..."));
-                                           args.Result = true;
-                                       }
-                                       catch(Exception ex) {
-                                           MainWindow.SaveError(ex);
-                                           Dispatcher.Invoke(new Action(() => StatusMessage.Text = "An error has occured, check error.log for more information..."));
-                                           args.Result = false;
-                                       }
-                                   };
+                try {
+                    _unityResult = XboxUnity.GetUnityCoverInfo(args.Argument.ToString());
+                    Dispatcher.Invoke(new Action(() => StatusMessage.Text = "Finished downloading asset information..."));
+                    args.Result = true;
+                    }
+                catch(Exception ex) {
+                    MainWindow.SaveError(ex);
+                    Dispatcher.Invoke(new Action(() => StatusMessage.Text = "An error has occured, check error.log for more information..."));
+                    args.Result = false;
+                    }
+            };
             _unityWorker.RunWorkerCompleted += (o, args) => {
-                                                   if((bool)args.Result) {
-                                                       ResultBox.ItemsSource = _unityResult;
-                                                       SearchResultCount.Text = _unityResult.Length.ToString(CultureInfo.InvariantCulture);
-                                                   }
-                                                   else {
-                                                       ResultBox.ItemsSource = null;
-                                                       SearchResultCount.Text = "0";
-                                                   }
-                                               };
+                if((bool)args.Result) {
+                    ResultBox.ItemsSource = _unityResult;
+                    SearchResultCount.Text = _unityResult.Length.ToString(CultureInfo.InvariantCulture);
+                    }
+                else {
+                    ResultBox.ItemsSource = null;
+                    SearchResultCount.Text = "0";
+                    }
+            };
 
             #endregion
 
             #region Xbox.com Worker
 
             _xboxWorker.DoWork += (sender, args) => {
-                                      try {
-                                          _xboxResult = _keywords == null
-                                                            ? _xboxAssetDownloader.GetTitleInfo(_titleId, args.Argument as XboxLocale)
-                                                            : _xboxAssetDownloader.GetTitleInfo(_keywords, args.Argument as XboxLocale);
-                                          Dispatcher.Invoke(new Action(() => StatusMessage.Text = "Finished downloading asset information..."));
-                                          args.Result = true;
-                                      }
-                                      catch(Exception ex) {
-                                          MainWindow.SaveError(ex);
-                                          Dispatcher.Invoke(new Action(() => StatusMessage.Text = "An error has occured, check error.log for more information..."));
-                                          args.Result = false;
-                                      }
-                                  };
+                try {
+                    _xboxResult = _keywords == null
+                                      ? _xboxAssetDownloader.GetTitleInfo(_titleId, args.Argument as XboxLocale)
+                                      : _xboxAssetDownloader.GetTitleInfo(_keywords, args.Argument as XboxLocale);
+                    Dispatcher.Invoke(new Action(() => StatusMessage.Text = "Finished downloading asset information..."));
+                    args.Result = true;
+                    }
+                catch(Exception ex) {
+                    MainWindow.SaveError(ex);
+                    Dispatcher.Invoke(new Action(() => StatusMessage.Text = "An error has occured, check error.log for more information..."));
+                    args.Result = false;
+                    }
+            };
             _xboxWorker.RunWorkerCompleted += (sender, args) => {
-                                                  if((bool)args.Result) {
-                                                      var disp = new List<XboxTitleInfo.XboxAssetInfo>();
-                                                      foreach(var info in _xboxResult)
-                                                          disp.AddRange(info.AssetsInfo);
-                                                      ResultBox.ItemsSource = disp;
-                                                      SearchResultCount.Text = disp.Count.ToString(CultureInfo.InvariantCulture);
-                                                  }
-                                                  else {
-                                                      ResultBox.ItemsSource = null;
-                                                      SearchResultCount.Text = "0";
-                                                  }
-                                              };
+                if((bool)args.Result) {
+                    var disp = new List<XboxTitleInfo.XboxAssetInfo>();
+                    foreach(var info in _xboxResult)
+                        disp.AddRange(info.AssetsInfo);
+                    ResultBox.ItemsSource = disp;
+                    SearchResultCount.Text = disp.Count.ToString(CultureInfo.InvariantCulture);
+                    }
+                else {
+                    ResultBox.ItemsSource = null;
+                    SearchResultCount.Text = "0";
+                    }
+            };
 
             #endregion
 
@@ -211,7 +218,7 @@ namespace AuroraAssetEditor.Controls {
             ((MenuItem)_screenshotsMenu[2]).Click += (sender, args) => _screenshots.Load(_img, false);
 
             #endregion
-        }
+            }
 
         private void LocaleWorkerDoWork(object sender, DoWorkEventArgs doWorkEventArgs) { _locales = XboxAssetDownloader.GetLocales(); }
 
@@ -222,14 +229,16 @@ namespace AuroraAssetEditor.Controls {
         private void SourceBox_SelectionChanged(object sender, SelectionChangedEventArgs e) {
             LocaleGrid.Visibility = SourceBox.SelectedIndex == 1 ? Visibility.Visible : Visibility.Hidden;
             //KeywordsButton.IsEnabled = SourceBox.SelectedIndex != 1;
-        }
+            Settings.Default.OnlineSourceIndex = SourceBox.SelectedIndex;
+            Settings.Default.Save();
+            }
 
         private void ByTitleIdClick(object sender, RoutedEventArgs e) {
             uint.TryParse(TitleIdBox.Text, NumberStyles.HexNumber, CultureInfo.CurrentCulture, out _titleId);
             if(_unityWorker.IsBusy || _xboxWorker.IsBusy) {
                 MessageBox.Show("Please wait for previous operation to complete!");
                 return;
-            }
+                }
             PreviewImg.Source = null;
             PreviewImg.ContextMenu.ItemsSource = null;
             _main.EditMenu.ItemsSource = null;
@@ -237,16 +246,16 @@ namespace AuroraAssetEditor.Controls {
             if(SourceBox.SelectedIndex == 0) {
                 StatusMessage.Text = "Downloading asset information...";
                 _unityWorker.RunWorkerAsync(_titleId.ToString("X08"));
-            }
+                }
             else
                 _xboxWorker.RunWorkerAsync(LocaleBox.SelectedItem);
-        }
+            }
 
         private void ByKeywordsClick(object sender, RoutedEventArgs e) {
             if(_unityWorker.IsBusy || _xboxWorker.IsBusy) {
                 MessageBox.Show("Please wait for previous operation to complete!");
                 return;
-            }
+                }
             PreviewImg.Source = null;
             PreviewImg.ContextMenu.ItemsSource = null;
             _main.EditMenu.ItemsSource = null;
@@ -256,8 +265,8 @@ namespace AuroraAssetEditor.Controls {
             else {
                 _keywords = KeywordsBox.Text;
                 _xboxWorker.RunWorkerAsync(LocaleBox.SelectedItem);
+                }
             }
-        }
 
         private void SetPreview(Image img, int maxWidth, int maxHeight) {
             PreviewImg.MaxHeight = maxHeight;
@@ -273,7 +282,7 @@ namespace AuroraAssetEditor.Controls {
             bi.StreamSource = ms;
             bi.EndInit();
             PreviewImg.Source = bi;
-        }
+            }
 
         private void ResultBox_SelectionChanged(object sender, SelectionChangedEventArgs e) {
             var unity = ResultBox.SelectedItem as XboxUnity.XboxUnityAsset;
@@ -285,22 +294,22 @@ namespace AuroraAssetEditor.Controls {
                     StatusMessage.Text = "Downloading asset data...";
                     var bw = new BackgroundWorker();
                     bw.DoWork += (o, args) => {
-                                     var asset = args.Argument as XboxUnity.XboxUnityAsset;
-                                     if(asset != null)
-                                         asset.GetCover();
-                                 };
+                        var asset = args.Argument as XboxUnity.XboxUnityAsset;
+                        if(asset != null)
+                            asset.GetCover();
+                    };
                     bw.RunWorkerCompleted += (o, args) => {
-                                                 StatusMessage.Text = "Finished downloading asset data...";
-                                                 ResultBox_SelectionChanged(null, null);
-                                             };
+                        StatusMessage.Text = "Finished downloading asset data...";
+                        ResultBox_SelectionChanged(null, null);
+                    };
                     bw.RunWorkerAsync(unity);
-                }
+                    }
                 else {
                     SetPreview(unity.GetCover(), 900, 600);
                     PreviewImg.ContextMenu.ItemsSource = _coverMenu;
                     _main.EditMenu.ItemsSource = _coverMenu;
+                    }
                 }
-            }
             else {
                 var xbox = ResultBox.SelectedItem as XboxTitleInfo.XboxAssetInfo;
                 if(xbox == null) {
@@ -308,52 +317,57 @@ namespace AuroraAssetEditor.Controls {
                     PreviewImg.ContextMenu.ItemsSource = null;
                     _main.EditMenu.ItemsSource = null;
                     return; // Dunno
-                }
+                    }
                 if(!xbox.HaveAsset) {
                     PreviewImg.Source = null;
                     StatusMessage.Text = "Downloading asset data...";
                     var bw = new BackgroundWorker();
                     bw.DoWork += (o, args) => {
-                                     var asset = args.Argument as XboxTitleInfo.XboxAssetInfo;
-                                     if(asset != null)
-                                         asset.GetAsset();
-                                 };
+                        var asset = args.Argument as XboxTitleInfo.XboxAssetInfo;
+                        if(asset != null)
+                            asset.GetAsset();
+                    };
                     bw.RunWorkerCompleted += (o, args) => {
-                                                 StatusMessage.Text = "Finished downloading asset data...";
-                                                 ResultBox_SelectionChanged(null, null);
-                                             };
+                        StatusMessage.Text = "Finished downloading asset data...";
+                        ResultBox_SelectionChanged(null, null);
+                    };
                     bw.RunWorkerAsync(xbox);
                     return;
-                }
+                    }
                 switch(xbox.AssetType) {
                     case XboxTitleInfo.XboxAssetType.Icon:
-                        SetPreview(xbox.GetAsset().Image, 64, 64);
-                        PreviewImg.ContextMenu.ItemsSource = _iconMenu;
-                        _main.EditMenu.ItemsSource = _iconMenu;
-                        break;
+                    SetPreview(xbox.GetAsset().Image, 64, 64);
+                    PreviewImg.ContextMenu.ItemsSource = _iconMenu;
+                    _main.EditMenu.ItemsSource = _iconMenu;
+                    break;
                     case XboxTitleInfo.XboxAssetType.Banner:
-                        SetPreview(xbox.GetAsset().Image, 420, 96);
-                        PreviewImg.ContextMenu.ItemsSource = _bannerMenu;
-                        _main.EditMenu.ItemsSource = _bannerMenu;
-                        break;
+                    SetPreview(xbox.GetAsset().Image, 420, 96);
+                    PreviewImg.ContextMenu.ItemsSource = _bannerMenu;
+                    _main.EditMenu.ItemsSource = _bannerMenu;
+                    break;
                     case XboxTitleInfo.XboxAssetType.Background:
-                        SetPreview(xbox.GetAsset().Image, 1280, 720);
-                        PreviewImg.ContextMenu.ItemsSource = _backgroundMenu;
-                        _main.EditMenu.ItemsSource = _backgroundMenu;
-                        break;
+                    SetPreview(xbox.GetAsset().Image, 1280, 720);
+                    PreviewImg.ContextMenu.ItemsSource = _backgroundMenu;
+                    _main.EditMenu.ItemsSource = _backgroundMenu;
+                    break;
                     case XboxTitleInfo.XboxAssetType.Screenshot:
-                        SetPreview(xbox.GetAsset().Image, 1000, 562);
-                        PreviewImg.ContextMenu.ItemsSource = _screenshotsMenu;
-                        _main.EditMenu.ItemsSource = _screenshotsMenu;
-                        break;
+                    SetPreview(xbox.GetAsset().Image, 1000, 562);
+                    PreviewImg.ContextMenu.ItemsSource = _screenshotsMenu;
+                    _main.EditMenu.ItemsSource = _screenshotsMenu;
+                    break;
+                    }
                 }
             }
-        }
 
         private void TitleIdBox_TextChanged(object sender, TextChangedEventArgs e) { TitleIdBox.Text = Regex.Replace(TitleIdBox.Text, "[^a-fA-F0-9]+", ""); }
 
         private void OnDragEnter(object sender, DragEventArgs e) { _main.OnDragEnter(sender, e); }
 
         private void OnDrop(object sender, DragEventArgs e) { _main.DragDrop(this, e); }
+
+        private void LocaleBox_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+            Settings.Default.LocaleMarketIndex = LocaleBox.SelectedIndex;
+            Settings.Default.Save();
+            }
+        }
     }
-}

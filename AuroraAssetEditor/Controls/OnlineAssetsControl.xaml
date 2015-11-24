@@ -33,7 +33,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="Locale:" Margin="10" />
                 <ComboBox x:Name="LocaleBox" Grid.Column="1" HorizontalAlignment="Left"
-                          Margin="0, 10, 0, 10" />
+                          Margin="0, 10, 0, 10" SelectionChanged="LocaleBox_SelectionChanged" />
             </Grid>
             <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3">
                 <Grid.ColumnDefinitions>

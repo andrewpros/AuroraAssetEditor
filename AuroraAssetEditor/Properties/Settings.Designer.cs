@@ -70,5 +70,29 @@ namespace AuroraAssetEditor.Properties {
                 this["LastDir"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int OnlineSourceIndex {
+            get {
+                return ((int)(this["OnlineSourceIndex"]));
+            }
+            set {
+                this["OnlineSourceIndex"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("-99")]
+        public int LocaleMarketIndex {
+            get {
+                return ((int)(this["LocaleMarketIndex"]));
+            }
+            set {
+                this["LocaleMarketIndex"] = value;
+            }
+        }
     }
 }
