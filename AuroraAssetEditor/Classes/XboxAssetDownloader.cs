@@ -86,13 +86,15 @@ namespace AuroraAssetEditor.Classes {
             Screenshot
         }
 
-        public string Title { get; private set; }
+        public string Title { get; set; }
 
         public string TitleId { get; private set; }
 
         public string Locale { get; private set; }
 
-        public XboxAssetInfo[] AssetsInfo { get; private set; }
+        public string Description { get; set; }
+
+        public XboxAssetInfo[] AssetsInfo { get; set; }
 
         public XboxAsset[] Assets {
             get {
@@ -191,7 +193,7 @@ namespace AuroraAssetEditor.Classes {
                               locale.Locale, titleId);
             XboxAssetDownloader.SendStatusChanged("Downloading title/asset information...");
             using(var stream = new MemoryStream(wc.DownloadData(url)))
-                ParseXml(stream, ret);
+               LocalOperations.ParseXml(stream, ret);
             return ret;
         }
 

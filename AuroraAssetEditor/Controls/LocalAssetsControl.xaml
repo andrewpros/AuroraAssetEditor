@@ -61,8 +61,8 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <TextBox x:Name="textBox" TextWrapping="Wrap" Text="path to Content.db (Aurora Dir/Data/Databases/)" VerticalAlignment="Center" Grid.Column="0" IsReadOnly="True" Foreground="#FF7C7C7C" />
-                <Button Content="Set Local DB" Padding="10, 5" Grid.Column="1" VerticalAlignment="Center" Margin="0,4,0,5" HorizontalAlignment="Left" Click="SetLocalDB_Click" />
+                <TextBox x:Name="textBoxDir" TextWrapping="Wrap" Text="path to Content.db (Aurora Dir/Data/Databases/)" VerticalAlignment="Center" Grid.Column="0" IsReadOnly="True" Foreground="#FF7C7C7C" />
+                <Button Content="Set Local DB" Padding="10, 5" Grid.Column="1" VerticalAlignment="Center" Margin="4,4,0,5" HorizontalAlignment="Left" Click="SetLocalDB_Click" />
             </Grid>
         </GroupBox>
     </Grid>

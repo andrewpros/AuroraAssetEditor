@@ -32,6 +32,7 @@ namespace AuroraAssetEditor.Controls {
         private byte[] _buffer;
         private bool _isBusy, _isError;
         private string ContentDbPath;
+        private string GameDataDir;
 
         public LocalAssetsControl(MainWindow main, BoxartControl boxart, BackgroundControl background, IconBannerControl iconBanner, ScreenshotsControl screenshots) {
             InitializeComponent();
@@ -357,9 +358,14 @@ namespace AuroraAssetEditor.Controls {
                 var contentdbFile = new FileInfo(openFileDialog.FileName);
 
                 ContentDbPath = contentdbFile.FullName;
+                GameDataDir = contentdbFile.Directory.Parent.FullName + Path.DirectorySeparatorChar + "GameData";
+
+                textBoxDir.Text = ContentDbPath;
 
                 Properties.Settings.Default.LastDir = contentdbFile.DirectoryName;
                 Properties.Settings.Default.Save();
+
+                App.LocalOperations.GameDataDir = GameDataDir;
 
                 GetAssetsClick();
 
