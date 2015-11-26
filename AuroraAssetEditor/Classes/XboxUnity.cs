@@ -95,7 +95,7 @@ namespace AuroraAssetEditor.Classes {
             private static Image GetImage(string url) {
 
                 byte[] ret = null;
-                using(var httpc = new HttpClient()) {
+                using(var httpc = new HttpClient()) { // WebClient nasty bug fix, The server committed a protocol violation. Section=ResponseStatusLine 
                     ret = httpc.GetByteArrayAsync(url).Result;
                     }
 
