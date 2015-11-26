@@ -73,9 +73,11 @@ namespace AuroraAssetEditor.Controls {
 
                 if(Settings.Default.LocaleMarketIndex == -99) {
                     Settings.Default.LocaleMarketIndex = index;
+                    Settings.Default.LocaleMarketName = "en-us";
                     }
 
                 LocaleBox.SelectedIndex = Settings.Default.LocaleMarketIndex;
+                Settings.Default.Save();
             };
             bw.RunWorkerAsync();
 
@@ -367,6 +369,7 @@ namespace AuroraAssetEditor.Controls {
 
         private void LocaleBox_SelectionChanged(object sender, SelectionChangedEventArgs e) {
             Settings.Default.LocaleMarketIndex = LocaleBox.SelectedIndex;
+            Settings.Default.LocaleMarketName = (LocaleBox.SelectedItem as XboxLocale).Locale;
             Settings.Default.Save();
             }
         }

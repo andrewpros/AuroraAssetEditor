@@ -37,7 +37,11 @@ namespace AuroraAssetEditor.Classes {
             var liveXmlNamespace = marketData.Root.Attributes().First(p => p.Name.LocalName == "live");
             string live = liveXmlNamespace.Value;
 
-            var fullTitle = marketData.Descendants(XName.Get("fullTitle", live)).First();
+            var fullTitle = marketData.Descendants(XName.Get("fullTitle", live)).FirstOrDefault();
+
+            if(fullTitle == null) {
+                return;
+                }
 
             titleInfo.Title = fullTitle.Value;
 

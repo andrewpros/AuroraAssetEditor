@@ -18,6 +18,11 @@ namespace AuroraAssetEditor.Controls {
     using System.Windows.Threading;
     using AuroraAssetEditor.Classes;
     using Microsoft.Win32;
+    using Properties;
+    using System.Collections.Generic;
+    using Ts = System.Threading.Tasks;
+    using System.Collections.Concurrent;
+    using System.Diagnostics;
 
     /// <summary>
     ///     Interaction logic for FtpAssetsControl.xaml
@@ -34,6 +39,10 @@ namespace AuroraAssetEditor.Controls {
         private string ContentDbPath;
         private string GameDataDir;
 
+        private readonly XboxAssetDownloader _xboxAssetDownloader = new XboxAssetDownloader();
+        private readonly BackgroundWorker _xboxWorker = new BackgroundWorker();
+
+
         public LocalAssetsControl(MainWindow main, BoxartControl boxart, BackgroundControl background, IconBannerControl iconBanner, ScreenshotsControl screenshots) {
             InitializeComponent();
             _main = main;
@@ -44,8 +53,131 @@ namespace AuroraAssetEditor.Controls {
 
             FtpAssetsBox.ItemsSource = _assetsList;
 
+            onlyNewSync.IsChecked = Settings.Default.OnlyNew;
+            sliderScreens.Value = Settings.Default.NumScreens;
+
+            #region Xbox.com Worker
+
+            _xboxWorker.WorkerReportsProgress = true;
+            _xboxWorker.WorkerSupportsCancellation = true;
+
+            var xboxMarketDataResult = new ConcurrentBag<XboxTitleInfo>();
+            var omitedTitles = new ConcurrentBag<AuroraDbManager.ContentItem>();
+
+            _xboxWorker.DoWork += (sender, args) => {
+
+                var bgWork = sender as BackgroundWorker;
+
+                try {
+
+                    if(_assetsList.Count ==0) {
+                        Dispatcher.Invoke(new Action(() => Status.Text = "No games..."));
+                        return;
+                        }
+
+                    xboxMarketDataResult = new ConcurrentBag<XboxTitleInfo>();
+                    omitedTitles = new ConcurrentBag<AuroraDbManager.ContentItem>();
+                    XboxLocale loc = args.Argument as XboxLocale;
+
+                    var _assetsToGo = _assetsList.Where(p => p.TitleIdNumber > 0);
+
+
+                    Dispatcher.Invoke(new Action(() => _main.busyProgress.Visibility = Visibility.Visible));
+                    Dispatcher.Invoke(new Action(() => _main.busyProgress.Text= "0 / " + _assetsToGo.Count()));
+
+
+                    var maxScreens = Settings.Default.NumScreens;
+
+                    int progressCount = 0;
+                    Object progressLock = new Object();
+
+
+                    Ts.Parallel.ForEach(_assetsToGo, (ast) => {
+
+                        if(bgWork.CancellationPending) {
+                            args.Cancel = true;
+                            }
+
+                        XboxTitleInfo _titleResult = _xboxAssetDownloader.GetTitleInfoSingle(ast.TitleIdNumber, loc);
+                        if(_titleResult.AssetsInfo!= null) {
+                            xboxMarketDataResult.Add(_titleResult);
+                            }
+                        else {
+                            omitedTitles.Add(ast);
+                            }
+
+
+                        lock (progressLock) {
+                            bgWork.ReportProgress(1, (++progressCount) + " / " + _assetsToGo.Count());
+                            }
+                    });
+
+                    Ts.Parallel.ForEach(xboxMarketDataResult, (titleItem) => {
+
+                    });
+
+                    Dispatcher.Invoke(new Action(() => Status.Text = "Finished downloading asset information..."));
+
+                    }
+                catch(Exception ex) {
+                    MainWindow.SaveError(ex);
+                    Dispatcher.Invoke(new Action(() => Status.Text = "An error has occured, check error.log for more information..."));
+                    }
+            };
+            _xboxWorker.RunWorkerCompleted += (sender, args) => {
+
+                _main.busyProgress.Visibility = Visibility.Collapsed;
+                _main.BusyIndicator.Visibility = Visibility.Collapsed;
+                syncDb.IsEnabled = true;
+
+                if(omitedTitles.Count >0) {
+
+                    var logPath = Path.GetTempPath() + Path.DirectorySeparatorChar + "omittedTitlesLog.log";
+
+                    string logcontent = "";
+                    foreach(var item in omitedTitles) {
+                        logcontent += "Title name: " + item.TitleName + @"
+
+TitleID: " + item.TitleId + @"
+
+Title int: " + item.TitleIdNumber + @"
+
+MediaID: " + item.MediaId + @"
+-----------------------------------------------
+
+";
+                        }
+
+                    File.WriteAllText(logPath, logcontent);
+
+                    var msgresult = MessageBox.Show("Omitted titles " + omitedTitles.Count + @"
+
+Show log?", "Action", MessageBoxButton.OKCancel, MessageBoxImage.Information, MessageBoxResult.Cancel);
+
+                    if(msgresult == MessageBoxResult.OK) {
+                        try {
+                            Process.Start(logPath);
+                            }
+                        catch {
+
+
+                            }
+                        }
+
+                    }
+                // var disp = new List<XboxTitleInfo.XboxAssetInfo>();
+
+            };
+
+            _xboxWorker.ProgressChanged+=_xboxWorker_ProgressChanged;
+
+            #endregion
+
             }
 
+        private void _xboxWorker_ProgressChanged(object sender, ProgressChangedEventArgs e) {
+            _main.busyProgress.Text= e.UserState.ToString();
+            }
 
         private void GetAssetsClick() {
             _assetsList.Clear();
@@ -60,7 +192,7 @@ namespace AuroraAssetEditor.Controls {
                     var path = Path.Combine(Path.GetTempPath(), "AuroraAssetEditor.db");
 
                     if(File.Exists(ContentDbPath)) {
-                        File.Copy(ContentDbPath, path);
+                        File.Copy(ContentDbPath, path, true);
 
                         }
                     else {
@@ -369,9 +501,105 @@ namespace AuroraAssetEditor.Controls {
 
                 GetAssetsClick();
 
+                syncDb.IsEnabled = true;
+
                 }
 
 
+            }
+
+        private void syncDb_Click(object sender, RoutedEventArgs e) {
+            var loc = Settings.Default.LocaleMarketName;
+
+            _main.BusyIndicator.Visibility = Visibility.Visible;
+            syncDb.IsEnabled = false;
+            _xboxWorker.RunWorkerAsync(new XboxLocale(loc, loc));
+            }
+
+        private void sliderScreens_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) {
+            Settings.Default.NumScreens = Convert.ToInt32(sliderScreens.Value);
+            Settings.Default.Save();
+            }
+
+        private void onlyNewSync_Checked(object sender, RoutedEventArgs e) {
+            Settings.Default.OnlyNew = true;
+            Settings.Default.Save();
+            }
+
+        private void onlyNewSync_Unchecked(object sender, RoutedEventArgs e) {
+            Settings.Default.OnlyNew = false;
+            Settings.Default.Save();
+            }
+
+
+
+        private void GetAssetsOnline(object sender, RoutedEventArgs e) {
+
+            var context = Ts.TaskScheduler.FromCurrentSynchronizationContext();
+
+            var titleItem = FtpAssetsBox.SelectedItem  as AuroraDbManager.ContentItem;
+
+            var loc_str = Settings.Default.LocaleMarketName;
+
+            var screenNum = Settings.Default.NumScreens;
+
+            int screenCount = 0;
+
+            var loc = new XboxLocale(loc_str, loc_str);
+
+            if(titleItem!= null) {
+                _main.BusyIndicator.Visibility= Visibility.Visible;
+
+                Ts.Task.Factory.StartNew(() => {
+
+
+                    XboxTitleInfo _titleResult = _xboxAssetDownloader.GetTitleInfoSingle(titleItem.TitleIdNumber, loc);
+
+                    var unityCovers = XboxUnity.GetUnityCoverInfo(titleItem.TitleId);
+
+                    if(unityCovers.Count() > 0) {
+                        var cover = unityCovers.FirstOrDefault(p => p._unityResponse.Official == true);
+                        if(cover!= null) {
+                            _boxart.Load(cover.GetCover());
+                            }
+                        }
+
+                    Ts.Parallel.ForEach(_titleResult.AssetsInfo, (ast) => {
+
+                        if(!ast.HaveAsset) {
+
+                            if(ast.AssetType == XboxTitleInfo.XboxAssetType.Screenshot && screenCount >= screenNum) {
+                                return;
+                                }
+                            var XboxAsset = ast.GetAsset();
+                            //   var assetFile = new AuroraAsset.AssetFile();
+                            switch(ast.AssetType) {
+                                case XboxTitleInfo.XboxAssetType.Icon:
+                                _iconBanner.Load(XboxAsset.Image, true);
+                                break;
+                                case XboxTitleInfo.XboxAssetType.Banner:
+                                _iconBanner.Load(XboxAsset.Image, false);
+                                break;
+                                case XboxTitleInfo.XboxAssetType.Background:
+                                _background.Load(XboxAsset.Image);
+                                break;
+                                case XboxTitleInfo.XboxAssetType.Screenshot:
+                                _screenshots.Load(XboxAsset.Image, false);
+                                screenCount++;
+                                break;
+                                default:
+                                break;
+                                }
+                            }
+
+                    });
+
+                }).ContinueWith((t) => {
+                    _main.BusyIndicator.Visibility= Visibility.Collapsed;
+                }, context);
+
+
+                }
             }
 
         private enum Task {

@@ -20,5 +20,14 @@
     <Setting Name="LocaleMarketIndex" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">-99</Value>
     </Setting>
+    <Setting Name="NumScreens" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="OnlyNew" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="LocaleMarketName" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
   </Settings>
 </SettingsFile>

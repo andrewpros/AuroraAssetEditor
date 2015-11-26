@@ -59,7 +59,10 @@
                 <Grid ZIndex="1">
                     <TextBlock Text="Please wait while processing your request..." VerticalAlignment="Center"
                                HorizontalAlignment="Center" Margin="20" FontWeight="Bold" />
+                    <TextBlock x:Name="busyProgress" Text="..." VerticalAlignment="Bottom" Visibility="Collapsed"
+                               HorizontalAlignment="Center" Margin="20" FontWeight="Bold" />
                 </Grid>
+                
             </Grid>
         </Grid>
     </Grid>

@@ -23,7 +23,7 @@ namespace AuroraAssetEditor.Classes {
                 _content.Close();
             _content = new SQLiteConnection("Data Source=\"" + path + "\";Version=3;");
             _content.Open();
-        }
+            }
 
         private static DataTable GetContentDataTable(string sql) {
             var dt = new DataTable();
@@ -31,12 +31,12 @@ namespace AuroraAssetEditor.Classes {
                 var cmd = new SQLiteCommand(sql, _content);
                 using(var reader = cmd.ExecuteReader())
                     dt.Load(reader);
-            }
+                }
             catch(Exception ex) {
                 MainWindow.SaveError(ex);
-            }
+                }
             return dt;
-        }
+            }
 
         public static IEnumerable<ContentItem> GetDbTitles(string path) {
             ConnectToContent(path);
@@ -47,13 +47,13 @@ namespace AuroraAssetEditor.Classes {
                 try {
                     File.Delete(path);
                     break;
-                }
+                    }
                 catch(IOException) {
                     Thread.Sleep(100);
+                    }
                 }
-            }
             return ret;
-        }
+            }
 
         private static IEnumerable<ContentItem> GetContentItems() { return GetContentDataTable("SELECT * FROM ContentItems").Select().Select(row => new ContentItem(row)).ToArray(); }
 
@@ -67,9 +67,15 @@ namespace AuroraAssetEditor.Classes {
                     discNum = 1;
                 DiscNum = discNum.ToString(CultureInfo.InvariantCulture);
                 TitleName = (string)row["TitleName"];
-            }
+
+                TitleIdNumber = Convert.ToInt32(row["TitleId"]);
+                }
 
             public string TitleId { get; private set; }
+
+            public int TitleIdNumber {
+                get; private set;
+                }
 
             public string MediaId { get; private set; }
 
@@ -96,6 +102,6 @@ namespace AuroraAssetEditor.Classes {
             public byte[] GetIconBanner() { return App.FtpOperations.GetAssetData(string.Format("GL{0}.asset", TitleId), Path); }
 
             public byte[] GetScreenshots() { return App.FtpOperations.GetAssetData(string.Format("SS{0}.asset", TitleId), Path); }
+            }
         }
     }
-}

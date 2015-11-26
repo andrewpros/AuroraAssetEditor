@@ -26,6 +26,8 @@
                 </DataGrid.Columns>
                 <DataGrid.ContextMenu>
                     <ContextMenu>
+                        <MenuItem Header="Get All Assets Online" Click="GetAssetsOnline"/>
+                        <Separator/>
                         <MenuItem Header="Get All Assets" Click="GetFtpAssetsClick"/>
                         <MenuItem Header="Get Boxart" Click="GetBoxartClick"/>
                         <MenuItem Header="Get Background" Click="GetBackgroundClick"/>
@@ -61,9 +63,19 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <TextBox x:Name="textBoxDir" TextWrapping="Wrap" Text="path to Content.db (Aurora Dir/Data/Databases/)" VerticalAlignment="Center" Grid.Column="0" IsReadOnly="True" Foreground="#FF7C7C7C" />
-                <Button Content="Set Local DB" Padding="10, 5" Grid.Column="1" VerticalAlignment="Center" Margin="4,4,0,5" HorizontalAlignment="Left" Click="SetLocalDB_Click" />
+                <TextBox x:Name="textBoxDir" TextWrapping="Wrap" Text="path to Content.db (Aurora Dir/Data/Databases/)" VerticalAlignment="Center" Grid.Column="0" IsReadOnly="True" Foreground="#FF7C7C7C" Margin="0,10,0,5" />
+                <Button Content="Set Local DB" Padding="10, 5" Grid.Column="1" VerticalAlignment="Center" Margin="4,4,0,1" HorizontalAlignment="Left" Click="SetLocalDB_Click" />
+                <StackPanel Orientation="Horizontal" Grid.Row="1">
+
+                    <Button x:Name="syncDb" IsEnabled="False" Content="Sync" Grid.Column="0" HorizontalAlignment="Left" Grid.Row="1" VerticalAlignment="Bottom" Width="75" Click="syncDb_Click" Margin="0,0,0,2"/>
+                    <CheckBox x:Name="onlyNewSync" Content="Only new" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="4,0,0,0" Checked="onlyNewSync_Checked" Unchecked="onlyNewSync_Unchecked"/>
+                    <TextBlock  Grid.Row="1" Text="Screen limit" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,0,0" />
+                    <Slider x:Name="sliderScreens" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Center" Width="121" Grid.ColumnSpan="2" Maximum="16" SmallChange="1" TickPlacement="BottomRight" IsSnapToTickEnabled="True" Margin="4,0,0,0" ValueChanged="sliderScreens_ValueChanged"/>
+                    <TextBlock x:Name="numScreens" Grid.Row="1" Grid.Column="1" Text="{Binding ElementName=sliderScreens, Path=Value, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,0,0" />
+                </StackPanel>
+
             </Grid>
         </GroupBox>
+
     </Grid>
 </UserControl>

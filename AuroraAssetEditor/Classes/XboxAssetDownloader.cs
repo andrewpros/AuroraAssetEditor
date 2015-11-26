@@ -27,56 +27,68 @@ namespace AuroraAssetEditor.Classes {
             var handler = StatusChanged;
             if(handler != null)
                 handler.Invoke(null, new StatusArgs(msg));
-        }
+            }
 
         public XboxTitleInfo[] GetTitleInfo(uint titleId, XboxLocale locale) {
             return new[] {
                              XboxTitleInfo.FromTitleId(titleId, locale)
                          };
-        }
+            }
+
+        public XboxTitleInfo GetTitleInfoSingle(uint titleId, XboxLocale locale) {
+            return XboxTitleInfo.FromTitleId(titleId, locale);
+            }
+
+        public XboxTitleInfo GetTitleInfoSingle(int titleId, XboxLocale locale) {
+            return GetTitleInfoSingle(Convert.ToUInt32(titleId), locale);
+            }
 
         public XboxTitleInfo[] GetTitleInfo(string keywords, XboxLocale locale) {
             var url = string.Format("http://marketplace.xbox.com/{0}/SiteSearch/xbox/?query={1}&PageSize=5", locale.Locale, HttpUtility.UrlEncode(keywords));
             var wc = new WebClient();
+            wc.Proxy = null;
+            wc.Headers.Add(HttpRequestHeader.UserAgent, App.UserAgent);
             var ret = new List<XboxTitleInfo>();
             using(var stream = wc.OpenRead(url)) {
                 if(stream == null)
                     return ret.ToArray();
                 var res = (XboxKeywordResponse)_serializer.ReadObject(stream);
                 ret.AddRange(from entry in res.Entries where entry.DetailsUrl != null let tid = entry.DetailsUrl.IndexOf("d802", StringComparison.Ordinal) where tid > 0 && entry.DetailsUrl.Length >= tid + 12 select uint.Parse(entry.DetailsUrl.Substring(tid + 4, 8), NumberStyles.HexNumber) into titleId select XboxTitleInfo.FromTitleId(titleId, locale));
-            }
+                }
             return ret.ToArray();
-        }
+            }
 
         public static XboxLocale[] GetLocales() {
             try {
-            var ret = new List<XboxLocale>();
-            var tmp = new List<string>();
-            var wc = new WebClient();
-            var data = Encoding.UTF8.GetString(wc.DownloadData("http://www.xbox.com/Shell/ChangeLocale")).Split('>');
-            for(var i = 0; i < data.Length; i++) {
-                if(!data[i].ToLower().Contains("?targetlocale="))
-                    continue;
-                var index = data[i].ToLower().IndexOf("?targetlocale=", StringComparison.Ordinal) + 14;
-                var id = data[i].Substring(index);
-                index = id.IndexOf('"');
-                if(index <= 0)
-                    continue;
-                id = id.Substring(0, index);
-                if(tmp.Contains(id))
-                    continue;
-                var name = data[i + 1];
-                name = name.Substring(0, name.IndexOf("</a", StringComparison.Ordinal));
-                name = HttpUtility.HtmlDecode(name);
-                ret.Add(new XboxLocale(id, name));
-                tmp.Add(id);
-            }
-            ret.Sort((l1, l2) => String.CompareOrdinal(l1.ToString(), l2.ToString()));
-            return ret.ToArray();
-            }
+                var ret = new List<XboxLocale>();
+                var tmp = new List<string>();
+                var wc = new WebClient();
+                wc.Proxy = null;
+                wc.Headers.Add(HttpRequestHeader.UserAgent, App.UserAgent);
+                var data = Encoding.UTF8.GetString(wc.DownloadData("http://www.xbox.com/Shell/ChangeLocale")).Split('>');
+                for(var i = 0;i < data.Length;i++) {
+                    if(!data[i].ToLower().Contains("?targetlocale="))
+                        continue;
+                    var index = data[i].ToLower().IndexOf("?targetlocale=", StringComparison.Ordinal) + 14;
+                    var id = data[i].Substring(index);
+                    index = id.IndexOf('"');
+                    if(index <= 0)
+                        continue;
+                    id = id.Substring(0, index);
+                    if(tmp.Contains(id))
+                        continue;
+                    var name = data[i + 1];
+                    name = name.Substring(0, name.IndexOf("</a", StringComparison.Ordinal));
+                    name = HttpUtility.HtmlDecode(name);
+                    ret.Add(new XboxLocale(id, name));
+                    tmp.Add(id);
+                    }
+                ret.Sort((l1, l2) => String.CompareOrdinal(l1.ToString(), l2.ToString()));
+                return ret.ToArray();
+                }
             catch { return new XboxLocale[0]; }
+            }
         }
-    }
 
     public class XboxTitleInfo {
         public enum XboxAssetType {
@@ -84,7 +96,7 @@ namespace AuroraAssetEditor.Classes {
             Banner,
             Background,
             Screenshot
-        }
+            }
 
         public string Title { get; set; }
 
@@ -102,8 +114,8 @@ namespace AuroraAssetEditor.Classes {
                     XboxAssetDownloader.SendStatusChanged(string.Format("Downloading assets for {0}...", Title));
                 var ret = AssetsInfo.Select(info => info.GetAsset()).ToArray();
                 return ret;
+                }
             }
-        }
 
         public XboxAsset[] IconAssets {
             get {
@@ -111,8 +123,8 @@ namespace AuroraAssetEditor.Classes {
                     XboxAssetDownloader.SendStatusChanged(string.Format("Downloading icon assets for {0}...", Title));
                 var ret = AssetsInfo.Where(info => info.AssetType == XboxAssetType.Icon).Select(info => info.GetAsset()).ToArray();
                 return ret;
+                }
             }
-        }
 
         public XboxAsset[] BannerAssets {
             get {
@@ -120,8 +132,8 @@ namespace AuroraAssetEditor.Classes {
                     XboxAssetDownloader.SendStatusChanged(string.Format("Downloading banner assets for {0}...", Title));
                 var ret = AssetsInfo.Where(info => info.AssetType == XboxAssetType.Banner).Select(info => info.GetAsset()).ToArray();
                 return ret;
+                }
             }
-        }
 
         public XboxAsset[] BackgroundAssets {
             get {
@@ -129,8 +141,8 @@ namespace AuroraAssetEditor.Classes {
                     XboxAssetDownloader.SendStatusChanged(string.Format("Downloading background assets for {0}...", Title));
                 var ret = AssetsInfo.Where(info => info.AssetType == XboxAssetType.Background).Select(info => info.GetAsset()).ToArray();
                 return ret;
+                }
             }
-        }
 
         public XboxAsset[] ScreenshotsAssets {
             get {
@@ -138,8 +150,8 @@ namespace AuroraAssetEditor.Classes {
                     XboxAssetDownloader.SendStatusChanged(string.Format("Downloading screenshot assets for {0}...", Title));
                 var ret = AssetsInfo.Where(info => info.AssetType == XboxAssetType.Screenshot).Select(info => info.GetAsset()).ToArray();
                 return ret;
+                }
             }
-        }
 
         private static void ParseXml(Stream xmlData, XboxTitleInfo titleInfo) {
             XboxAssetDownloader.SendStatusChanged("Parsing Title/Asset info...");
@@ -155,7 +167,7 @@ namespace AuroraAssetEditor.Classes {
                     if(name == "fulltitle") {
                         xml.Read();
                         titleInfo.Title = xml.Value;
-                    }
+                        }
                     if(name != "image")
                         continue;
                     while(xml.Read() && !(!xml.IsStartElement() && xml.Name.ToLower() == "live:image")) {
@@ -174,28 +186,30 @@ namespace AuroraAssetEditor.Classes {
                             ret.Add(new XboxAssetInfo(url, XboxAssetType.Screenshot, titleInfo));
                         //Ignore anything else
                         break; // We're done with this image
+                        }
                     }
                 }
-            }
             titleInfo.AssetsInfo = ret.ToArray();
             XboxAssetDownloader.SendStatusChanged("Finished parsing Title/Asset info...");
-        }
+            }
 
         public static XboxTitleInfo FromTitleId(uint titleId, XboxLocale locale) {
             var ret = new XboxTitleInfo {
-                                            TitleId = string.Format("{0:X08}", titleId),
-                                            Locale = locale.ToString()
-                                        };
+                TitleId = string.Format("{0:X08}", titleId),
+                Locale = locale.ToString()
+                };
             var wc = new WebClient();
+            wc.Proxy = null;
+            wc.Headers.Add(HttpRequestHeader.UserAgent, App.UserAgent);
             var url =
                 string.Format(
                               "http://catalog.xboxlive.com/Catalog/Catalog.asmx/Query?methodName=FindGames&Names=Locale&Values={0}&Names=LegalLocale&Values={0}&Names=Store&Values=1&Names=PageSize&Values=100&Names=PageNum&Values=1&Names=DetailView&Values=5&Names=OfferFilterLevel&Values=1&Names=MediaIds&Values=66acd000-77fe-1000-9115-d802{1:X8}&Names=UserTypes&Values=2&Names=MediaTypes&Values=1&Names=MediaTypes&Values=21&Names=MediaTypes&Values=23&Names=MediaTypes&Values=37&Names=MediaTypes&Values=46",
                               locale.Locale, titleId);
             XboxAssetDownloader.SendStatusChanged("Downloading title/asset information...");
             using(var stream = new MemoryStream(wc.DownloadData(url)))
-               LocalOperations.ParseXml(stream, ret);
+                LocalOperations.ParseXml(stream, ret);
             return ret;
-        }
+            }
 
         public class XboxAsset {
             public readonly XboxAssetType AssetType;
@@ -205,8 +219,8 @@ namespace AuroraAssetEditor.Classes {
             public XboxAsset(Image image, XboxAssetType assetType) {
                 Image = image;
                 AssetType = assetType;
+                }
             }
-        }
 
         public class XboxAssetInfo {
             public readonly XboxAssetType AssetType;
@@ -218,7 +232,7 @@ namespace AuroraAssetEditor.Classes {
                 AssetUrl = assetUrl;
                 AssetType = assetType;
                 _titleInfo = titleInfo;
-            }
+                }
 
             public bool HaveAsset { get { return _asset != null; } }
 
@@ -226,15 +240,17 @@ namespace AuroraAssetEditor.Classes {
                 if(_asset != null)
                     return _asset; // We already have it
                 var wc = new WebClient();
+                wc.Proxy = null;
+                wc.Headers.Add(HttpRequestHeader.UserAgent, App.UserAgent);
                 var data = wc.DownloadData(AssetUrl);
                 var ms = new MemoryStream(data);
                 var img = Image.FromStream(ms);
                 return _asset = new XboxAsset(img, AssetType);
-            }
+                }
 
             public override string ToString() { return string.Format("{0} [ {1} ] {2}", _titleInfo.Title, _titleInfo.TitleId, AssetType); }
+            }
         }
-    }
 
     public class XboxLocale {
         public readonly string Locale;
@@ -244,17 +260,21 @@ namespace AuroraAssetEditor.Classes {
         public XboxLocale(string locale, string name) {
             Locale = locale;
             _name = name;
-        }
+            }
 
         public override string ToString() { return string.Format("{0} [ {1} ]", _name, Locale); }
-    }
+        }
 
-    [DataContract] public class XboxKeywordResponse {
-        [DataMember(Name = "entries")] public Entry[] Entries { get; set; }
+    [DataContract]
+    public class XboxKeywordResponse {
+        [DataMember(Name = "entries")]
+        public Entry[] Entries { get; set; }
 
-        [DataContract] public class Entry {
-            [DataMember(Name = "detailsUrl")] public string DetailsUrl { get; set; }
+        [DataContract]
+        public class Entry {
+            [DataMember(Name = "detailsUrl")]
+            public string DetailsUrl { get; set; }
             //There is more data sent both here and ^, but we only need this, so i only added that...
+            }
         }
     }
-}

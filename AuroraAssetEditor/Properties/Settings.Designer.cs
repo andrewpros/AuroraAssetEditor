@@ -94,5 +94,41 @@ namespace AuroraAssetEditor.Properties {
                 this["LocaleMarketIndex"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int NumScreens {
+            get {
+                return ((int)(this["NumScreens"]));
+            }
+            set {
+                this["NumScreens"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool OnlyNew {
+            get {
+                return ((bool)(this["OnlyNew"]));
+            }
+            set {
+                this["OnlyNew"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string LocaleMarketName {
+            get {
+                return ((string)(this["LocaleMarketName"]));
+            }
+            set {
+                this["LocaleMarketName"] = value;
+            }
+        }
     }
 }
