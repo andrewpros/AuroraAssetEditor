@@ -90,7 +90,7 @@ namespace AuroraAssetEditor.Classes {
             }
         }
 
-    public class XboxTitleInfo {
+    public class XboxTitleInfo:IDisposable {
         public enum XboxAssetType {
             Icon,
             Banner,
@@ -107,6 +107,8 @@ namespace AuroraAssetEditor.Classes {
         public string Description { get; set; }
 
         public XboxAssetInfo[] AssetsInfo { get; set; }
+
+        public XboxUnity.XboxUnityAsset CoverAsset { get; set; }
 
         public XboxAsset[] Assets {
             get {
@@ -211,18 +213,36 @@ namespace AuroraAssetEditor.Classes {
             return ret;
             }
 
-        public class XboxAsset {
+        public void Dispose() {
+            if(CoverAsset!= null) {
+                CoverAsset.Dispose();
+                }
+            CoverAsset = null;
+            }
+
+        public class XboxAsset:IDisposable {
             public readonly XboxAssetType AssetType;
 
             public readonly Image Image;
 
-            public XboxAsset(Image image, XboxAssetType assetType) {
+            public byte[] Bytes;
+
+            public XboxAsset(Image image, XboxAssetType assetType, byte[] bytes) {
                 Image = image;
                 AssetType = assetType;
+                Bytes = bytes;
+                }
+
+            public void Dispose() {
+                if(Image!= null) {
+                    Image.Dispose();
+                    }
+                //    Image = null;
+                Bytes = null;
                 }
             }
 
-        public class XboxAssetInfo {
+        public class XboxAssetInfo:IDisposable {
             public readonly XboxAssetType AssetType;
             public readonly Uri AssetUrl;
             private readonly XboxTitleInfo _titleInfo;
@@ -243,12 +263,22 @@ namespace AuroraAssetEditor.Classes {
                 wc.Proxy = null;
                 wc.Headers.Add(HttpRequestHeader.UserAgent, App.UserAgent);
                 var data = wc.DownloadData(AssetUrl);
+                wc.Dispose();
                 var ms = new MemoryStream(data);
                 var img = Image.FromStream(ms);
-                return _asset = new XboxAsset(img, AssetType);
+                return _asset = new XboxAsset(img, AssetType, data);
                 }
 
             public override string ToString() { return string.Format("{0} [ {1} ] {2}", _titleInfo.Title, _titleInfo.TitleId, AssetType); }
+
+            public void Dispose() {
+                if(_asset!= null) {
+                    _asset.Dispose();
+                    }
+                _asset = null;
+
+                //  _titleInfo.Dispose();
+                }
             }
         }
 

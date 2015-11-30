@@ -92,18 +92,29 @@ namespace AuroraAssetEditor.Controls {
                     Object progressLock = new Object();
 
 
-                    Ts.Parallel.ForEach(_assetsToGo, (ast) => {
+                    Ts.Parallel.ForEach(_assetsToGo, (contentItem) => {
 
                         if(bgWork.CancellationPending) {
                             args.Cancel = true;
                             }
 
-                        XboxTitleInfo _titleResult = _xboxAssetDownloader.GetTitleInfoSingle(ast.TitleIdNumber, loc);
+                        XboxTitleInfo _titleResult = _xboxAssetDownloader.GetTitleInfoSingle(contentItem.TitleIdNumber, loc);
+
                         if(_titleResult.AssetsInfo!= null) {
+
+                            var unityCovers = XboxUnity.GetUnityCoverInfo(contentItem.TitleId);
+
+                            if(unityCovers.Count() > 0) {
+                                var cover = unityCovers.FirstOrDefault(p => p._unityResponse.Official == true);
+                                if(cover!= null) {
+                                    _titleResult.CoverAsset = cover;
+                                    }
+                                }
+
                             xboxMarketDataResult.Add(_titleResult);
                             }
                         else {
-                            omitedTitles.Add(ast);
+                            omitedTitles.Add(contentItem);
                             }
 
 
@@ -112,8 +123,74 @@ namespace AuroraAssetEditor.Controls {
                             }
                     });
 
-                    Ts.Parallel.ForEach(xboxMarketDataResult, (titleItem) => {
 
+                    progressCount = 0;
+
+                    Ts.Parallel.ForEach(xboxMarketDataResult, (titleItem) => {
+                        AuroraDbManager.ContentItem contentItem = _assetsToGo.FirstOrDefault(p => p.TitleId == titleItem.TitleId);
+                        if(contentItem!= null) {
+
+                            lock (progressLock) {
+                                bgWork.ReportProgress(1, (++progressCount) + " / " + xboxMarketDataResult.Count);
+                                }
+
+                            var itemWrap = new ContentItemLocal(contentItem);
+
+                            if(titleItem.CoverAsset!= null) {
+
+                                var assetFileC = new AuroraAsset.AssetFile();
+
+                                assetFileC.SetBoxart(titleItem.CoverAsset.GetCover(), true);
+
+                                itemWrap.SaveAsBoxart(assetFileC.FileData);
+
+                                assetFileC.Dispose();
+                                }
+
+                            int screenCount = 0;
+
+                            Ts.Parallel.ForEach(titleItem.AssetsInfo, (assetInfo) => {
+
+                                if(!assetInfo.HaveAsset) {
+
+                                    if(assetInfo.AssetType == XboxTitleInfo.XboxAssetType.Screenshot && screenCount >= maxScreens) {
+                                        return;
+                                        }
+                                    var XboxAsset = assetInfo.GetAsset();
+                                    var assetFile = new AuroraAsset.AssetFile();
+
+                                    switch(assetInfo.AssetType) {
+                                        case XboxTitleInfo.XboxAssetType.Icon:
+                                        assetFile.SetIcon(XboxAsset.Image, true);
+                                        itemWrap.SaveAsIconBanner(assetFile.FileData);
+                                        break;
+                                        case XboxTitleInfo.XboxAssetType.Banner:
+                                        assetFile.SetBanner(XboxAsset.Image, true);
+                                        itemWrap.SaveAsIconBanner(assetFile.FileData);
+                                        break;
+                                        case XboxTitleInfo.XboxAssetType.Background:
+                                        assetFile.SetBackground(XboxAsset.Image, true);
+                                        itemWrap.SaveAsBackground(assetFile.FileData);
+                                        break;
+                                        case XboxTitleInfo.XboxAssetType.Screenshot:
+                                        // _screenshots.Load(XboxAsset.Image, false);
+                                        // itemWrap.SaveAsScreenshots(assetFile.FileData);
+                                        screenCount++;
+                                        break;
+                                        default:
+                                        break;
+                                        }
+                                    //  XboxAsset.Dispose();
+                                    assetFile.Dispose();
+
+                                    }
+
+                                GC.Collect();
+
+                            });
+
+                            }
+                        titleItem.Dispose();
                     });
 
                     Dispatcher.Invoke(new Action(() => Status.Text = "Finished downloading asset information..."));

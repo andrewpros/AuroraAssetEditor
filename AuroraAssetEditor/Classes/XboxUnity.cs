@@ -16,17 +16,18 @@ namespace AuroraAssetEditor.Classes {
     using System.Runtime.Serialization.Json;
     using System.Web;
 
-    internal static class XboxUnity {
+    public static class XboxUnity {
         private static readonly DataContractJsonSerializer Serializer = new DataContractJsonSerializer(typeof(UnityResponse[]));
 
         private static string GetUnityUrl(string searchTerm) { return string.Format("http://xboxunity.net/api/Covers/{0}", HttpUtility.UrlEncode(searchTerm)); }
 
         public static XboxUnityAsset[] GetUnityCoverInfo(string searchTerm) {
-            using(var wc = new WebClient()) {
-                wc.Proxy = null;
-                wc.Headers.Add(HttpRequestHeader.UserAgent, App.UserAgent);
+            // #The server committed a protocol violation. Section=ResponseStatusLine
+            using(var wc = new HttpClient()) {
+
                 try {
-                    var stream = wc.OpenRead(GetUnityUrl(searchTerm));
+                    var stream = wc.GetStreamAsync(GetUnityUrl(searchTerm)).Result;
+
                     return stream != null ? ((UnityResponse[])Serializer.ReadObject(stream)).Select(t => new XboxUnityAsset(t)).ToArray() : new XboxUnityAsset[0];
                     }
                 catch(Exception ex) {
@@ -47,7 +48,7 @@ namespace AuroraAssetEditor.Classes {
             }
 
         [DataContract]
-        internal class UnityResponse {
+        public class UnityResponse {
             [DataMember(Name = "titleid")]
             public string TitleId { get; set; }
 
@@ -82,9 +83,10 @@ namespace AuroraAssetEditor.Classes {
             public string Link { get; set; }
             }
 
-        public class XboxUnityAsset {
+        public class XboxUnityAsset:IDisposable {
             public readonly UnityResponse _unityResponse;
             private Image _cover;
+            public byte[] _coverBytes;
 
             public XboxUnityAsset(UnityResponse response) { _unityResponse = response; }
 
@@ -92,10 +94,10 @@ namespace AuroraAssetEditor.Classes {
 
             public string Title { get { return _unityResponse.Name; } }
 
-            private static Image GetImage(string url) {
+            private static byte[] GetImage(string url) {
 
                 byte[] ret = null;
-                using(var httpc = new HttpClient()) { // WebClient nasty bug fix, The server committed a protocol violation. Section=ResponseStatusLine 
+                using(var httpc = new HttpClient()) { // WebClient nasty bug fix, The server committed a protocol violation. Section=ResponseStatusLine
                     ret = httpc.GetByteArrayAsync(url).Result;
                     }
 
@@ -103,18 +105,36 @@ namespace AuroraAssetEditor.Classes {
 
                 //var data = wc.DownloadData(url);
 
-                var ms = new MemoryStream(ret);
-                return Image.FromStream(ms);
+
+                return ret;
                 }
 
             public Image GetCover() {
-                if(_cover != null)
+                if(_cover != null) {
                     return _cover;
-                return _cover = GetImage(_unityResponse.Url);
+                    }
+
+                _coverBytes = GetImage(_unityResponse.Url);
+
+                var ms = new MemoryStream(_coverBytes);
+
+                _cover = Image.FromStream(ms);
+
+                return _cover;
                 }
 
             public override string ToString() {
                 return string.Format(_unityResponse.Official ? "Official cover for {0} Rating: {1}" : "Cover for {0} Rating: {1}", _unityResponse.Name, _unityResponse.Rating ?? "N/A");
+                }
+
+            public void Dispose() {
+                if(_cover!= null) {
+                    _cover.Dispose();
+                    _cover = null;
+                    }
+                _coverBytes = null;
+
+
                 }
             }
         }

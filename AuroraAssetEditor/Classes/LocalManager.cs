@@ -22,7 +22,16 @@ namespace AuroraAssetEditor.Classes {
             return null;
             }
 
-        public bool SendAssetData(string file, string assetDir, byte[] data) {
+        public bool SendAssetData(string filename, string assetDir, byte[] data) {
+
+            var pathToGameDir = GameDataDir + Path.DirectorySeparatorChar + assetDir + Path.DirectorySeparatorChar;
+
+            var fileAssetPath = pathToGameDir + filename;
+
+            using(var stream = File.OpenWrite(fileAssetPath)) {
+                stream.Write(data, 0, data.Length);
+                }
+
 
             return true;
             }
@@ -85,17 +94,19 @@ namespace AuroraAssetEditor.Classes {
 
         }
 
-    internal class ContentItemLocal {
+    public class ContentItemLocal {
         public ContentItemLocal(ContentItem original) {
             DatabaseId = original.DatabaseId;
             TitleId = original.TitleId;
             MediaId = original.MediaId;
             DiscNum = original.DiscNum;
             TitleName = original.TitleName;
-
+            TitleIdNumber = original.TitleIdNumber;
             }
 
         public string TitleId { get; private set; }
+
+        public int TitleIdNumber { get; private set; }
 
         public string MediaId { get; private set; }
 

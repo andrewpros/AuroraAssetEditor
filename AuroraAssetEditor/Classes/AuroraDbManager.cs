@@ -15,7 +15,7 @@ namespace AuroraAssetEditor.Classes {
     using System.Linq;
     using System.Threading;
 
-    internal static class AuroraDbManager {
+    public static class AuroraDbManager {
         private static SQLiteConnection _content;
 
         private static void ConnectToContent(string path) {
@@ -57,7 +57,7 @@ namespace AuroraAssetEditor.Classes {
 
         private static IEnumerable<ContentItem> GetContentItems() { return GetContentDataTable("SELECT * FROM ContentItems").Select().Select(row => new ContentItem(row)).ToArray(); }
 
-        internal class ContentItem {
+        public class ContentItem {
             public ContentItem(DataRow row) {
                 DatabaseId = ((int)((long)row["Id"])).ToString("X08");
                 TitleId = ((int)((long)row["TitleId"])).ToString("X08");

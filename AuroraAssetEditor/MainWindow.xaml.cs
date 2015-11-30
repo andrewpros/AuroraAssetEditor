@@ -362,6 +362,7 @@ namespace AuroraAssetEditor {
                     //TODO: Add option to honor aspect ratio
                     img = new Bitmap(img, newSize);
                     }
+                ms.Dispose();
                 return img;
                 }
             catch(Exception ex) {

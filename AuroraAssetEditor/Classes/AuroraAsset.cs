@@ -25,7 +25,7 @@ namespace AuroraAssetEditor.Classes {
             ScreenshotStart, // Screenshot 1
             ScreenshotEnd = ScreenshotStart + ScreenShotMax, // Screenshot 20
             Max = ScreenshotEnd // End of it all
-        }
+            }
 
         private const int ScreenShotMax = 20;
 
@@ -38,26 +38,26 @@ namespace AuroraAssetEditor.Classes {
             Marshal.Copy(raw, 0, bmpData.Scan0, raw.Length);
             ret.UnlockBits(bmpData);
             return ret;
-        }
+            }
 
         private static byte[] ImageToRawArgb(Image img) {
             var bmp = new Bitmap(img);
             var ret = new byte[bmp.Height * bmp.Width * 4];
             var i = 0;
-            for(var y = 0; y < bmp.Height; y++) {
-                for(var x = 0; x < bmp.Width; x++) {
+            for(var y = 0;y < bmp.Height;y++) {
+                for(var x = 0;x < bmp.Width;x++) {
                     var c = bmp.GetPixel(x, y);
                     ret[i] = c.A;
                     ret[i + 1] = c.R;
                     ret[i + 2] = c.G;
                     ret[i + 3] = c.B;
                     i += 4;
+                    }
                 }
-            }
             return ret;
-        }
+            }
 
-        public class AssetFile {
+        public class AssetFile:IDisposable {
             public readonly int DataOffset;
             public readonly AssetPackEntryTable EntryTable;
             public readonly AssetPackHeader Header;
@@ -67,7 +67,7 @@ namespace AuroraAssetEditor.Classes {
                 EntryTable = new AssetPackEntryTable();
                 DataOffset = 20 + (EntryTable.Entries.Length * 64);
                 DataOffset += 2048 - (DataOffset % 2048);
-            }
+                }
 
             public AssetFile(byte[] data) {
                 if(data == null) {
@@ -76,7 +76,7 @@ namespace AuroraAssetEditor.Classes {
                     DataOffset = 20 + (EntryTable.Entries.Length * 64);
                     DataOffset += 2048 - (DataOffset % 2048);
                     return;
-                }
+                    }
                 if(data.Length < 2048)
                     throw new Exception("Invalid asset file size!");
                 var magic = Swap(BitConverter.ToUInt32(data, 0));
@@ -91,15 +91,15 @@ namespace AuroraAssetEditor.Classes {
                 DataOffset = 20 + (EntryTable.Entries.Length * 64);
                 DataOffset += 2048 - (DataOffset % 2048);
                 var offset = DataOffset;
-                for(var i = 0; i < EntryTable.Entries.Length; i++) {
+                for(var i = 0;i < EntryTable.Entries.Length;i++) {
                     if(EntryTable.Entries[i].Size <= 0)
                         continue;
                     var tmp = new byte[EntryTable.Entries[i].Size];
                     Buffer.BlockCopy(data, offset, tmp, 0, tmp.Length);
                     SetImage(tmp, i);
                     offset += tmp.Length;
+                    }
                 }
-            }
 
             public int PaddingSize { get { return 0x800 - ((0x14 + EntryTable.Entries.Length * 0x40) % 0x800); } }
 
@@ -112,7 +112,7 @@ namespace AuroraAssetEditor.Classes {
                     Header.DataSize = 0;
                     EntryTable.Flags = 0;
                     EntryTable.ScreenshotCount = 0;
-                    for(var i = 0; i < EntryTable.Entries.Length; i++) {
+                    for(var i = 0;i < EntryTable.Entries.Length;i++) {
                         var entry = EntryTable.Entries[i];
                         if(entry.Size <= 0)
                             continue;
@@ -122,7 +122,7 @@ namespace AuroraAssetEditor.Classes {
                         EntryTable.Flags |= (uint)(1 << i);
                         if(i <= (int)AssetType.ScreenshotEnd && i >= (int)AssetType.ScreenshotStart)
                             EntryTable.ScreenshotCount++;
-                    }
+                        }
                     ret.AddRange(BitConverter.GetBytes(Swap(Header.Magic)));
                     ret.AddRange(BitConverter.GetBytes(Swap(Header.Version)));
                     ret.AddRange(BitConverter.GetBytes(Swap(Header.DataSize)));
@@ -133,13 +133,13 @@ namespace AuroraAssetEditor.Classes {
                         ret.AddRange(BitConverter.GetBytes(Swap(entry.Size)));
                         ret.AddRange(BitConverter.GetBytes(Swap(entry.ExtendedInfo)));
                         ret.AddRange(entry.TextureHeader);
-                    }
+                        }
                     ret.AddRange(Padding);
                     foreach(var entry in EntryTable.Entries.Where(entry => entry.Size > 0))
                         ret.AddRange(entry.VideoData);
                     return ret.ToArray();
+                    }
                 }
-            }
 
             public bool HasBoxArt { get { return EntryTable.Entries[(int)AssetType.Boxart].Size > 0; } }
 
@@ -157,7 +157,7 @@ namespace AuroraAssetEditor.Classes {
                     EntryTable.Entries[index].VideoData = new byte[0];
                     EntryTable.Entries[index].TextureHeader = new byte[EntryTable.Entries[index].TextureHeader.Length];
                     return true;
-                }
+                    }
                 EntryTable.Entries[index].ImageData = img;
                 var data = ImageToRawArgb(img);
                 byte[] video = new byte[0], header = new byte[0];
@@ -166,7 +166,7 @@ namespace AuroraAssetEditor.Classes {
                 EntryTable.Entries[index].VideoData = video;
                 EntryTable.Entries[index].TextureHeader = header;
                 return true;
-            }
+                }
 
             private void SetImage(byte[] videoData, int index) {
                 var imageData = new byte[0];
@@ -175,7 +175,7 @@ namespace AuroraAssetEditor.Classes {
                     return;
                 EntryTable.Entries[index].VideoData = videoData;
                 EntryTable.Entries[index].ImageData = RawArgbToImage(imageData, imageWidth, imageHeight);
-            }
+                }
 
             private void SetImage(AssetFile asset, int index) {
                 var target = EntryTable.Entries[index];
@@ -183,7 +183,7 @@ namespace AuroraAssetEditor.Classes {
                 target.TextureHeader = src.TextureHeader;
                 target.VideoData = src.VideoData;
                 target.ImageData = src.ImageData;
-            }
+                }
 
             public bool SetIcon(Image img, bool useCompression) { return SetImage(img, (int)AssetType.Icon, useCompression); }
 
@@ -196,7 +196,7 @@ namespace AuroraAssetEditor.Classes {
             public bool SetScreenshot(Image img, int num, bool useCompression) {
                 num += (int)AssetType.ScreenshotStart - 1;
                 return num <= (int)AssetType.ScreenshotEnd && SetImage(img, num, useCompression);
-            }
+                }
 
             public Image GetIcon() { return EntryTable.Entries[(int)AssetType.Icon].Size > 0 ? EntryTable.Entries[(int)AssetType.Icon].ImageData : null; }
 
@@ -211,14 +211,14 @@ namespace AuroraAssetEditor.Classes {
                 if(num > (int)AssetType.ScreenshotEnd)
                     return null;
                 return EntryTable.Entries[num].Size > 0 ? EntryTable.Entries[num].ImageData : null;
-            }
+                }
 
             public Image[] GetScreenshots() {
                 var ret = new List<Image>();
-                for(var i = 0; i < ScreenShotMax; i++)
+                for(var i = 0;i < ScreenShotMax;i++)
                     ret.Add(GetScreenshot(i + 1));
                 return ret.ToArray();
-            }
+                }
 
             public void SetBoxart(AssetFile asset) { SetImage(asset, (int)AssetType.Boxart); }
 
@@ -229,10 +229,25 @@ namespace AuroraAssetEditor.Classes {
             public void SetBanner(AssetFile asset) { SetImage(asset, (int)AssetType.Banner); }
 
             public void SetScreenshots(AssetFile asset) {
-                for(var i = (int)AssetType.ScreenshotStart; i < (int)AssetType.ScreenshotEnd; i++)
+                for(var i = (int)AssetType.ScreenshotStart;i < (int)AssetType.ScreenshotEnd;i++)
                     SetImage(asset, i);
+                }
+
+            public void Dispose() {
+                if(EntryTable!= null) {
+                    foreach(var item in EntryTable.Entries) {
+                        if(item.ImageData!= null) {
+                            item.ImageData.Dispose();
+                            }
+                        item.ImageData = null;
+                        item.VideoData = null;
+                        item.TextureHeader = null;
+
+                        }
+
+                    }
+                }
             }
-        }
 
         public class AssetPackEntry {
             public Image ImageData;
@@ -243,14 +258,14 @@ namespace AuroraAssetEditor.Classes {
                 Offset = 0;
                 VideoData = new byte[0];
                 TextureHeader = new byte[52];
-            }
+                }
 
             public AssetPackEntry(byte[] data, int offset) {
                 Offset = Swap(BitConverter.ToUInt32(data, offset));
                 VideoData = new byte[Swap(BitConverter.ToUInt32(data, offset + 4))];
                 TextureHeader = new byte[52];
                 Buffer.BlockCopy(data, (offset + 12), TextureHeader, 0, TextureHeader.Length);
-            }
+                }
 
             public uint Offset { get; internal set; }
 
@@ -264,8 +279,8 @@ namespace AuroraAssetEditor.Classes {
                 var sz = ImageSize;
                 return string.Format("Offset: 0x{0:X}{4}Size: 0x{1:X}{4}Extended Info: 0x{2:X}{4}Texture Header Size: 0x{3:X}{4}Width: {5}{4}Height: {6}", Offset, Size, ExtendedInfo,
                                      TextureHeader.Length, Environment.NewLine, sz.Width, sz.Height);
+                }
             }
-        }
 
         public class AssetPackEntryTable {
             public readonly AssetPackEntry[] Entries = new AssetPackEntry[(int)AssetType.Max];
@@ -273,17 +288,17 @@ namespace AuroraAssetEditor.Classes {
             public AssetPackEntryTable() {
                 Flags = 0;
                 ScreenshotCount = 0;
-                for(var i = 0; i < Entries.Length; i++)
+                for(var i = 0;i < Entries.Length;i++)
                     Entries[i] = new AssetPackEntry();
-            }
+                }
 
             public AssetPackEntryTable(byte[] data, int offset) {
                 Flags = Swap(BitConverter.ToUInt32(data, offset));
                 ScreenshotCount = Swap(BitConverter.ToUInt32(data, offset + 4));
                 offset += 8;
-                for(var i = 0; i < Entries.Length; i++, offset += 64)
+                for(var i = 0;i < Entries.Length;i++, offset += 64)
                     Entries[i] = new AssetPackEntry(data, offset);
-            }
+                }
 
             public uint Flags { get; internal set; }
 
@@ -294,23 +309,23 @@ namespace AuroraAssetEditor.Classes {
                 sb.AppendFormat("Flags: 0x{0:X}{1}", Flags, Environment.NewLine);
                 sb.AppendFormat("ScreenshotCount: {0}{1}", ScreenshotCount, Environment.NewLine);
                 sb.AppendLine("Entries:");
-                for(var i = 0; i < Entries.Length; i++) {
+                for(var i = 0;i < Entries.Length;i++) {
                     if(i < (int)AssetType.ScreenshotStart || i > (int)AssetType.ScreenshotEnd)
                         sb.AppendLine(((AssetType)i) + ":");
                     else
                         sb.AppendLine(string.Format("ScreenShot {0}:", i - (int)AssetType.ScreenshotStart));
                     sb.AppendLine(Entries[i].Size > 0 ? Entries[i].ToString() : "No data...");
-                }
+                    }
                 return sb.ToString();
+                }
             }
-        }
 
         public class AssetPackHeader {
             public AssetPackHeader(uint magic, uint version, uint dataSize) {
                 Magic = magic;
                 Version = version;
                 DataSize = dataSize;
-            }
+                }
 
             public uint Magic { get; private set; }
 
@@ -320,7 +335,7 @@ namespace AuroraAssetEditor.Classes {
 
             public override string ToString() {
                 return string.Format("Magic: {0}{3}Version: {1}{3}DataSize: {2}", Encoding.ASCII.GetString(BitConverter.GetBytes(Swap(Magic))), Version, DataSize, Environment.NewLine);
+                }
             }
         }
     }
-}
